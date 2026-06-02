@@ -1,0 +1,50 @@
+# 🫙 Calculadora de Potes
+
+Ferramenta web para calcular preços de combos de potes com desconto, valor por unidade e economia em tempo real.
+
+---
+
+## ✨ Funcionalidades
+
+- **Combos configuráveis** — defina quantos kits quiser (ex: 2, 3, 6 potes) pelo modal de configuração
+- **Cálculo automático** — valor total riscado, desconto, preço por pote e economia calculados ao digitar
+- **Badge de % OFF** — exibe a porcentagem de desconto em cada combo
+- **Preço base editável** — altere o valor individual do pote e todos os combos recalculam instantaneamente
+- **Design responsivo** — funciona em desktop e mobile
+
+## 🖥️ Preview
+
+> Interface dark com cards por combo, badge de desconto e banner de economia em verde.
+
+## 🚀 Como usar
+
+1. Clone o repositório ou baixe os arquivos
+2. Abra o arquivo `index.html` no navegador
+3. Defina o **valor individual por pote**
+4. Clique em **⚙ Configurar combos** e configure as quantidades desejadas
+5. Em cada card de combo, insira o **valor total com desconto**
+6. Os resultados aparecem automaticamente
+
+> Não requer instalação, servidor ou dependências. Funciona 100% no navegador.
+
+## 📁 Estrutura
+
+```
+├── index.html   # Estrutura HTML
+├── styles.css   # Estilização (tema dark, responsivo)
+└── script.js    # Lógica de cálculo e modal
+```
+
+## 🛠️ Tecnologias
+
+- HTML5
+- CSS3 (variáveis CSS, Grid, animações)
+- JavaScript puro (sem frameworks)
+- Google Fonts — Inter
+
+## 👤 Autor
+
+Desenvolvido por **Gabriel Mendes**
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/gabriel-mendes-bb5571264/)
+[![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/gabrielmenndess/)
