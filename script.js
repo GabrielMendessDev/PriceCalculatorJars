@@ -251,7 +251,7 @@ function renderGrid(discountOverride) {
                 </div>
 
                 <div class="savings" data-sbox>
-                    <span class="sv-lbl">✨ Você economiza</span>
+                    <span class="sv-lbl">Você economiza</span>
                     <span class="sv-val" data-saves></span>
                 </div>
             </div>
