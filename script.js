@@ -1,11 +1,70 @@
 let qtys = [2, 3, 6];
 
 const el = id => document.getElementById(id);
+const STORAGE_KEY = 'potes_state';
 
 function fmt(n) {
     if (n === null || n === undefined || isNaN(n)) return '—';
-    return '$ ' + n.toFixed(2)
-        .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return '$ ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ── Persistência ───────────────────────────────────────
+
+let saveTimer;
+function saveState() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        const discounts = {};
+        document.querySelectorAll('[data-qty]').forEach(c => {
+            const v = c.querySelector('[data-disc]')?.value;
+            if (v) discounts[c.dataset.qty] = v;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            qtys,
+            base: el('base-price')?.value || '179',
+            discounts
+        }));
+    }, 300);
+}
+
+function loadState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        const state = JSON.parse(raw);
+        if (Array.isArray(state.qtys) && state.qtys.length > 0) qtys = state.qtys;
+        if (state.base) {
+            const bp = el('base-price');
+            if (bp) bp.value = state.base;
+        }
+        return state.discounts || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function clearAll(btn) {
+    if (btn.dataset.confirm === '1') {
+        localStorage.removeItem(STORAGE_KEY);
+        qtys = [2, 3, 6];
+        el('base-price').value = '179';
+        renderChips();
+        renderGrid({});
+        btn.textContent = 'Limpar';
+        delete btn.dataset.confirm;
+        btn.classList.remove('confirming');
+    } else {
+        btn.textContent = 'Tem certeza?';
+        btn.dataset.confirm = '1';
+        btn.classList.add('confirming');
+        setTimeout(() => {
+            if (btn.dataset.confirm === '1') {
+                btn.textContent = 'Limpar';
+                delete btn.dataset.confirm;
+                btn.classList.remove('confirming');
+            }
+        }, 3000);
+    }
 }
 
 // ── Chips ──────────────────────────────────────────────
@@ -23,6 +82,7 @@ function removeQty(i) {
     qtys.splice(i, 1);
     renderChips();
     renderGrid();
+    saveState();
 }
 
 // ── Modal ──────────────────────────────────────────────
@@ -62,7 +122,7 @@ function buildModalRow(value, index) {
             <label>Kit ${index}</label>
             <div class="input-wrap" style="flex:1">
                 <input type="number" class="modal-qty-input" value="${value || ''}"
-                       min="1" step="1" placeholder="Qtd de potes"
+                       min="1" step="1" placeholder="Qtd"
                        oninput="this.classList.remove('error')">
             </div>
             <button class="modal-rm-row" onclick="removeModalRow(this)" title="Remover">✕</button>
@@ -73,10 +133,6 @@ function buildModalRow(value, index) {
 function addModalRow() {
     const rows = el('modal-rows');
     const count = rows.querySelectorAll('.modal-row').length + 1;
-    const div = document.createElement('div');
-    div.className = 'modal-row modal-row-new';
-    div.innerHTML = buildModalRow('', count);
-    // buildModalRow returns a div wrapper, extract inner
     const temp = document.createElement('div');
     temp.innerHTML = buildModalRow('', count);
     const newRow = temp.firstElementChild;
@@ -121,6 +177,7 @@ function saveModal() {
     closeModal();
     renderChips();
     renderGrid();
+    saveState();
 }
 
 function closeModal() {
@@ -138,17 +195,21 @@ function handleModalKey(e) {
 
 // ── Grid ───────────────────────────────────────────────
 
-function renderGrid() {
+function renderGrid(discountOverride) {
     const grid = el('grid');
-
     const saved = {};
-    grid.querySelectorAll('[data-qty]').forEach(c => {
-        const v = c.querySelector('[data-disc]')?.value;
-        if (v) saved[c.dataset.qty] = v;
-    });
+
+    if (discountOverride) {
+        Object.assign(saved, discountOverride);
+    } else {
+        grid.querySelectorAll('[data-qty]').forEach(c => {
+            const v = c.querySelector('[data-disc]')?.value;
+            if (v) saved[c.dataset.qty] = v;
+        });
+    }
 
     if (!qtys.length) {
-        grid.innerHTML = '<div class="empty">Nenhum combo configurado.<br>Clique em <strong>Configurar combos</strong> para começar.</div>';
+        grid.innerHTML = '<div class="empty">Nenhum combo configurado.<br>Clique em <strong>⚙ Configurar combos</strong> para começar.</div>';
         return;
     }
 
@@ -169,7 +230,7 @@ function renderGrid() {
                 <div class="card-inp-wrap">
                     <div class="input-wrap has-prefix">
                         <span class="prefix">$</span>
-                        <input type="number" data-disc min="0" step="0.01" placeholder="0,00"
+                        <input type="number" data-disc min="0" step="0.01" placeholder="0.00"
                                value="${saved[q] || ''}"
                                oninput="calc(this, ${q})">
                     </div>
@@ -218,6 +279,7 @@ function calc(input, qty) {
         card.querySelector('[data-ppot]').textContent = '—';
         card.querySelector('[data-sbox]').style.display = 'none';
         if (badge) badge.style.display = 'none';
+        saveState();
         return;
     }
 
@@ -244,6 +306,8 @@ function calc(input, qty) {
     } else {
         sbox.style.display = 'none';
     }
+
+    saveState();
 }
 
 function recalcAll() {
@@ -256,8 +320,9 @@ function recalcAll() {
 // ── Init ───────────────────────────────────────────────
 
 function init() {
+    const discounts = loadState();
     renderChips();
-    renderGrid();
+    renderGrid(discounts);
 }
 
 if (document.readyState === 'loading') {
