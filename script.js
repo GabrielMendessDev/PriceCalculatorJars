@@ -5,7 +5,8 @@ const STORAGE_KEY = 'potes_state';
 
 function fmt(n) {
     if (n === null || n === undefined || isNaN(n)) return '—';
-    return '$ ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const formatted = n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
+    return '$ ' + formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 // ── Persistência ───────────────────────────────────────
