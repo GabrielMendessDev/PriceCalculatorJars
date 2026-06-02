@@ -222,7 +222,6 @@ function renderGrid(discountOverride) {
                 </div>
                 <div class="card-top-right">
                     <span class="disc-badge" data-disc-pct></span>
-                    <div class="card-icon">🫙</div>
                 </div>
             </div>
             <div class="card-body">
