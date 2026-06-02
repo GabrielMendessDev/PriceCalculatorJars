@@ -18,12 +18,11 @@ Ferramenta web para calcular preços de combos de potes com desconto, valor por 
 
 ## 🚀 Como usar
 
-1. Clone o repositório ou baixe os arquivos
-2. Abra o arquivo `index.html` no navegador
-3. Defina o **valor individual por pote**
-4. Clique em **⚙ Configurar combos** e configure as quantidades desejadas
-5. Em cada card de combo, insira o **valor total com desconto**
-6. Os resultados aparecem automaticamente
+1. [Abrir o site](https://gabrielmendessdev.github.io/PriceCalculatorJars/) no navegador
+2. Defina o **valor individual por pote**
+3. Clique em **⚙ Configurar combos** e configure as quantidades desejadas
+4. Em cada card de combo, insira o **valor total com desconto**
+5. Os resultados aparecem automaticamente
 
 > Não requer instalação, servidor ou dependências. Funciona 100% no navegador.
 
