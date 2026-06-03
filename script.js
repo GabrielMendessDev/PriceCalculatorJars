@@ -1,4 +1,5 @@
 let qtys = [2, 3, 6];
+let inputMode = 'total'; // 'total' | 'ppot'
 
 const el = id => document.getElementById(id);
 const STORAGE_KEY = 'potes_state';
@@ -16,14 +17,21 @@ function saveState() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
         const discounts = {};
-        document.querySelectorAll('[data-qty]').forEach(c => {
-            const v = c.querySelector('[data-disc]')?.value;
-            if (v) discounts[c.dataset.qty] = v;
+        document.querySelectorAll('[data-idx]').forEach(c => {
+            const inp = c.querySelector('[data-disc]');
+            const qty = parseInt(c.dataset.qty);
+            const idx = c.dataset.idx;
+            const v = parseFloat(inp?.value);
+            if (inp?.value && !isNaN(v)) {
+                // Always store totals in localStorage
+                discounts[idx] = inputMode === 'ppot' ? String(v * qty) : String(v);
+            }
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
             qtys,
             base: el('base-price')?.value || '179',
-            discounts
+            discounts,
+            inputMode
         }));
     }, 300);
 }
@@ -34,6 +42,7 @@ function loadState() {
         if (!raw) return {};
         const state = JSON.parse(raw);
         if (Array.isArray(state.qtys) && state.qtys.length > 0) qtys = state.qtys;
+        if (state.inputMode) inputMode = state.inputMode;
         if (state.base) {
             const bp = el('base-price');
             if (bp) bp.value = state.base;
@@ -48,7 +57,9 @@ function clearAll(btn) {
     if (btn.dataset.confirm === '1') {
         localStorage.removeItem(STORAGE_KEY);
         qtys = [2, 3, 6];
+        inputMode = 'total';
         el('base-price').value = '179';
+        updateModeButtons();
         renderChips();
         renderGrid({});
         btn.textContent = 'Limpar';
@@ -68,6 +79,33 @@ function clearAll(btn) {
     }
 }
 
+// ── Modo de entrada ────────────────────────────────────
+
+function setMode(mode) {
+    if (mode === inputMode) return;
+
+    const totals = {};
+    el('grid').querySelectorAll('[data-idx]').forEach(c => {
+        const inp = c.querySelector('[data-disc]');
+        const idx = c.dataset.idx;
+        const qty = parseInt(c.dataset.qty);
+        const v = parseFloat(inp.value);
+        if (inp.value && !isNaN(v)) {
+            totals[idx] = inputMode === 'ppot' ? v * qty : v;
+        }
+    });
+
+    inputMode = mode;
+    updateModeButtons();
+    renderGrid(totals);
+    saveState();
+}
+
+function updateModeButtons() {
+    el('mode-total')?.classList.toggle('active', inputMode === 'total');
+    el('mode-ppot')?.classList.toggle('active', inputMode === 'ppot');
+}
+
 // ── Chips ──────────────────────────────────────────────
 
 function renderChips() {
@@ -80,9 +118,30 @@ function renderChips() {
 }
 
 function removeQty(i) {
+    // Collect discounts before mutating qtys, then re-map indices
+    const currentDiscounts = {};
+    el('grid').querySelectorAll('[data-idx]').forEach(c => {
+        const inp = c.querySelector('[data-disc]');
+        const idx = parseInt(c.dataset.idx);
+        const qty = parseInt(c.dataset.qty);
+        const v = parseFloat(inp?.value);
+        if (inp?.value && !isNaN(v)) {
+            currentDiscounts[idx] = inputMode === 'ppot' ? v * qty : v;
+        }
+    });
+
     qtys.splice(i, 1);
+
+    // Shift indices: skip removed, decrement higher ones
+    const remapped = {};
+    Object.entries(currentDiscounts).forEach(([idx, val]) => {
+        const n = parseInt(idx);
+        if (n < i) remapped[n] = val;
+        else if (n > i) remapped[n - 1] = val;
+    });
+
     renderChips();
-    renderGrid();
+    renderGrid(remapped);
     saveState();
 }
 
@@ -163,7 +222,7 @@ function saveModal() {
 
     inputs.forEach(inp => {
         const val = parseInt(inp.value);
-        if (!val || val < 1 || newQtys.includes(val)) {
+        if (!val || val < 1) {
             inp.classList.add('error');
             hasError = true;
         } else {
@@ -198,14 +257,20 @@ function handleModalKey(e) {
 
 function renderGrid(discountOverride) {
     const grid = el('grid');
+    // saved is index-keyed; values always in "total" terms
     const saved = {};
 
     if (discountOverride) {
         Object.assign(saved, discountOverride);
     } else {
-        grid.querySelectorAll('[data-qty]').forEach(c => {
-            const v = c.querySelector('[data-disc]')?.value;
-            if (v) saved[c.dataset.qty] = v;
+        grid.querySelectorAll('[data-idx]').forEach(c => {
+            const inp = c.querySelector('[data-disc]');
+            const idx = c.dataset.idx;
+            const qty = parseInt(c.dataset.qty);
+            const v = parseFloat(inp?.value);
+            if (inp?.value && !isNaN(v)) {
+                saved[idx] = inputMode === 'ppot' ? v * qty : v;
+            }
         });
     }
 
@@ -214,8 +279,21 @@ function renderGrid(discountOverride) {
         return;
     }
 
-    grid.innerHTML = qtys.map(q => `
-        <div class="card" data-qty="${q}">
+    const inpLabel = inputMode === 'ppot' ? 'Valor por pote com desconto' : 'Valor total com desconto';
+
+    grid.innerHTML = qtys.map((q, i) => {
+        const totalVal = saved[i];
+        let inputStr = '';
+        if (totalVal != null && totalVal !== '') {
+            const parsed = parseFloat(totalVal);
+            if (!isNaN(parsed)) {
+                const displayVal = inputMode === 'ppot' ? parsed / q : parsed;
+                inputStr = displayVal % 1 === 0 ? String(displayVal) : displayVal.toFixed(2);
+            }
+        }
+
+        return `
+        <div class="card" data-idx="${i}" data-qty="${q}">
             <div class="card-top" data-qty-bg="${q}">
                 <div class="card-top-left">
                     <div class="card-qty">${q} potes</div>
@@ -226,13 +304,13 @@ function renderGrid(discountOverride) {
                 </div>
             </div>
             <div class="card-body">
-                <div class="inp-label">Valor total com desconto</div>
+                <div class="inp-label">${inpLabel}</div>
                 <div class="card-inp-wrap">
                     <div class="input-wrap has-prefix">
                         <span class="prefix">$</span>
                         <input type="number" data-disc min="0" step="0.01" placeholder="0.00"
-                               value="${saved[q] || ''}"
-                               oninput="calc(this, ${q})">
+                               value="${inputStr}"
+                               oninput="calc(this, ${i})">
                     </div>
                 </div>
 
@@ -257,24 +335,25 @@ function renderGrid(discountOverride) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
-    grid.querySelectorAll('[data-qty]').forEach(c => {
+    grid.querySelectorAll('[data-idx]').forEach(c => {
         const inp = c.querySelector('[data-disc]');
-        calc(inp, parseInt(c.dataset.qty));
+        calc(inp, parseInt(c.dataset.idx));
     });
 }
 
-function calc(input, qty) {
-    const card = input.closest('[data-qty]');
+function calc(input, idx) {
+    const card = input.closest('[data-idx]');
+    const qty = parseInt(card.dataset.qty);
     const base = parseFloat(el('base-price').value) || 0;
     const riscado = qty * base;
-    const disc = parseFloat(input.value);
+    const rawVal = parseFloat(input.value);
     const badge = card.querySelector('[data-disc-pct]');
 
     card.querySelector('[data-riscado]').textContent = fmt(riscado);
 
-    if (!input.value || isNaN(disc)) {
+    if (!input.value || isNaN(rawVal)) {
         card.querySelector('[data-total]').textContent = '—';
         card.querySelector('[data-ppot]').textContent = '—';
         card.querySelector('[data-sbox]').style.display = 'none';
@@ -283,7 +362,15 @@ function calc(input, qty) {
         return;
     }
 
-    const ppot = disc / qty;
+    let disc, ppot;
+    if (inputMode === 'ppot') {
+        ppot = rawVal;
+        disc = ppot * qty;
+    } else {
+        disc = rawVal;
+        ppot = disc / qty;
+    }
+
     const saves = riscado - disc;
 
     card.querySelector('[data-total]').textContent = fmt(disc);
@@ -311,9 +398,9 @@ function calc(input, qty) {
 }
 
 function recalcAll() {
-    el('grid').querySelectorAll('[data-qty]').forEach(c => {
+    el('grid').querySelectorAll('[data-idx]').forEach(c => {
         const inp = c.querySelector('[data-disc]');
-        calc(inp, parseInt(c.dataset.qty));
+        calc(inp, parseInt(c.dataset.idx));
     });
 }
 
@@ -321,6 +408,7 @@ function recalcAll() {
 
 function init() {
     const discounts = loadState();
+    updateModeButtons();
     renderChips();
     renderGrid(discounts);
 }
