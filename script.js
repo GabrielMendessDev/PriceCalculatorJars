@@ -297,7 +297,7 @@ function renderGrid(discountOverride) {
             <div class="card-top" data-qty-bg="${q}">
                 <div class="card-top-left">
                     <div class="card-qty">${q} potes</div>
-                    <div class="card-sub">Combo</div>
+                    <div class="card-sub">${q * 30} Day Supply</div>
                 </div>
                 <div class="card-top-right">
                     <span class="disc-badge" data-disc-pct></span>
