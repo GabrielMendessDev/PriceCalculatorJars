@@ -513,38 +513,15 @@ hr.sep {
     margin: 1rem 0;
 }
 
-/* ── Número herói: o valor derivado, que é o que se compara entre combos ── */
-.hero {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.75rem;
-    margin-bottom: 0.7rem;
-}
-
-.hero-lbl {
-    font-size: 0.73rem;
-    color: var(--muted);
-    font-weight: 500;
-}
-
-.hero-val {
-    font-size: 1.7rem;
-    font-weight: 900;
-    letter-spacing: -0.035em;
-    color: #fff;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-    transition: color 0.2s;
-}
-
-/* ── Barra comparativa: quanto do preço cheio o desconto corta ── */
+/* ── Barra comparativa: quanto do preço cheio o desconto corta.
+   Fica DEPOIS das linhas de resultado para não deslocá-las da posição
+   original — funciona como resumo visual logo antes da economia. ── */
 .bar {
     height: 6px;
     border-radius: 99px;
     background: var(--surface3);
     overflow: hidden;
-    margin-bottom: 1.1rem;
+    margin-top: 0.9rem;
 }
 
 .bar-fill {
@@ -559,7 +536,6 @@ hr.sep {
 }
 
 /* ── Estado vazio: recua o bloco de resultados até haver o que mostrar ── */
-.card.is-empty .hero-val { color: var(--muted2); }
 .card.is-empty .result-row { opacity: 0.5; }
 .card.is-empty .bar { opacity: 0.5; }
 

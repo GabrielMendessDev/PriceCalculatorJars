@@ -354,14 +354,6 @@ function renderGrid(discountOverride) {
 
     const inpLabel = inputMode === 'ppot' ? 'Valor por pote com desconto' : 'Valor total com desconto';
 
-    // O número herói é sempre o que o usuário NÃO digitou — o derivado.
-    // Os slots trocam de lugar, mas calc() continua escrevendo nos mesmos
-    // data-attributes, então a lógica de cálculo não muda.
-    const heroLabel = inputMode === 'ppot' ? 'Valor total do combo' : 'Valor por pote';
-    const echoLabel = inputMode === 'ppot' ? 'Valor por pote' : 'Valor total com desconto';
-    const heroAttr = inputMode === 'ppot' ? 'data-total' : 'data-ppot';
-    const echoAttr = inputMode === 'ppot' ? 'data-ppot' : 'data-total';
-
     grid.innerHTML = qtys.map((q, i) => {
         const totalVal = saved[i];
         let inputStr = '';
@@ -400,21 +392,20 @@ function renderGrid(discountOverride) {
 
                 <hr class="sep">
 
-                <div class="hero">
-                    <span class="hero-lbl">${heroLabel}</span>
-                    <span class="hero-val" ${heroAttr}>—</span>
-                </div>
-
-                <div class="bar" aria-hidden="true"><span class="bar-fill"></span></div>
-
                 <div class="result-row">
                     <span class="r-lbl">Valor total riscado</span>
                     <span class="r-val strike" data-riscado>—</span>
                 </div>
                 <div class="result-row">
-                    <span class="r-lbl">${echoLabel}</span>
-                    <span class="r-val disc" ${echoAttr}>—</span>
+                    <span class="r-lbl">Valor total com desconto</span>
+                    <span class="r-val disc" data-total>—</span>
                 </div>
+                <div class="result-row">
+                    <span class="r-lbl">Valor dos potes</span>
+                    <span class="r-val ppot" data-ppot>—</span>
+                </div>
+
+                <div class="bar" aria-hidden="true"><span class="bar-fill"></span></div>
 
                 <div class="savings" data-sbox>
                     <span class="sv-lbl">Você economiza</span>
