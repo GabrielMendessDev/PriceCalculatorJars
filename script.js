@@ -405,8 +405,6 @@ function renderGrid(discountOverride) {
                     <span class="r-val ppot" data-ppot>—</span>
                 </div>
 
-                <div class="bar" aria-hidden="true"><span class="bar-fill"></span></div>
-
                 <div class="savings" data-sbox>
                     <span class="sv-lbl">Você economiza</span>
                     <span class="sv-val" data-saves></span>
@@ -437,7 +435,6 @@ function calc(input, idx) {
         card.querySelector('[data-sbox]').style.display = 'none';
         if (badge) badge.style.display = 'none';
         card.classList.add('is-empty');
-        card.style.setProperty('--pct', 0);
         delete card.dataset.ppot;
         updateBest();
         saveState();
@@ -476,9 +473,8 @@ function calc(input, idx) {
         sbox.style.display = 'none';
     }
 
-    // Estado visual: barra comparativa e ranking de melhor valor.
+    // Estado visual: ranking de melhor valor.
     card.classList.remove('is-empty');
-    card.style.setProperty('--pct', riscado > 0 ? Math.max(0, Math.min(100, (saves / riscado) * 100)) : 0);
     card.dataset.ppot = ppot;
     updateBest();
 
