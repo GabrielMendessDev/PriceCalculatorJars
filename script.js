@@ -4,6 +4,22 @@ let inputMode = 'total'; // 'total' | 'ppot'
 const el = id => document.getElementById(id);
 const STORAGE_KEY = 'potes_state';
 
+// Crossfade nativo ao re-renderizar o grid. Sem biblioteca: se o navegador
+// não suportar, ou se o usuário pediu menos movimento, roda direto.
+function withTransition(fn) {
+    // Todo uso daqui muda o estado global (qtys/inputMode) e reconstrói o grid.
+    // Um save agendado antes da mudança leria o DOM antigo com o estado novo e
+    // gravaria valores corrompidos — descarta-se, pois fn() reagenda o correto.
+    cancelPendingSave();
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (document.startViewTransition && !reduced) {
+        document.startViewTransition(fn);
+    } else {
+        fn();
+    }
+}
+
 function fmt(n) {
     if (n === null || n === undefined || isNaN(n)) return '—';
     const formatted = n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
@@ -13,6 +29,11 @@ function fmt(n) {
 // ── Persistência ───────────────────────────────────────
 
 let saveTimer;
+
+function cancelPendingSave() {
+    clearTimeout(saveTimer);
+}
+
 function saveState() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -60,8 +81,10 @@ function clearAll(btn) {
         inputMode = 'total';
         el('base-price').value = '179';
         updateModeButtons();
-        renderChips();
-        renderGrid({});
+        withTransition(() => {
+            renderChips();
+            renderGrid({});
+        });
         btn.textContent = 'Limpar';
         delete btn.dataset.confirm;
         btn.classList.remove('confirming');
@@ -97,8 +120,12 @@ function setMode(mode) {
 
     inputMode = mode;
     updateModeButtons();
-    renderGrid(totals);
-    saveState();
+    // saveState() lê os inputs do DOM e os interpreta segundo inputMode.
+    // Precisa rodar DEPOIS do re-render, senão leria valores no modo antigo.
+    withTransition(() => {
+        renderGrid(totals);
+        saveState();
+    });
 }
 
 function updateModeButtons() {
@@ -107,6 +134,22 @@ function updateModeButtons() {
     el('mode-ppot')?.classList.toggle('active', !isTotal);
     el('mode-total')?.setAttribute('aria-pressed', String(isTotal));
     el('mode-ppot')?.setAttribute('aria-pressed', String(!isTotal));
+}
+
+// Valores digitados agrupados pela quantidade de potes do combo.
+// Sempre em termos de "total", como no localStorage. Usa fila por quantidade
+// porque é permitido ter mais de um kit com a mesma quantidade.
+function collectDiscountsByQty() {
+    const byQty = {};
+    el('grid').querySelectorAll('[data-idx]').forEach(c => {
+        const inp = c.querySelector('[data-disc]');
+        const qty = parseInt(c.dataset.qty);
+        const v = parseFloat(inp?.value);
+        if (inp?.value && !isNaN(v)) {
+            (byQty[qty] = byQty[qty] || []).push(inputMode === 'ppot' ? v * qty : v);
+        }
+    });
+    return byQty;
 }
 
 // ── Chips ──────────────────────────────────────────────
@@ -144,9 +187,11 @@ function removeQty(i) {
         else if (n > i) remapped[n - 1] = val;
     });
 
-    renderChips();
-    renderGrid(remapped);
-    saveState();
+    withTransition(() => {
+        renderChips();
+        renderGrid(remapped);
+        saveState();
+    });
 }
 
 // ── Modal ──────────────────────────────────────────────
@@ -246,11 +291,26 @@ function saveModal() {
 
     if (hasError) return;
 
+    // Precisa ler o grid ANTES de trocar qtys — o DOM ainda é o antigo.
+    // O índice não serve de identidade aqui: o sort() abaixo reordena tudo,
+    // e o modal pode ter editado, somado ou removido kits. A quantidade de
+    // potes é o que identifica o combo de fato.
+    const byQty = collectDiscountsByQty();
+
     qtys = newQtys.sort((a, b) => a - b);
+
+    const remapped = {};
+    qtys.forEach((q, i) => {
+        const queue = byQty[q];
+        if (queue && queue.length) remapped[i] = queue.shift();
+    });
+
     closeModal();
-    renderChips();
-    renderGrid();
-    saveState();
+    withTransition(() => {
+        renderChips();
+        renderGrid(remapped);
+        saveState();
+    });
 }
 
 function closeModal() {
@@ -294,6 +354,14 @@ function renderGrid(discountOverride) {
 
     const inpLabel = inputMode === 'ppot' ? 'Valor por pote com desconto' : 'Valor total com desconto';
 
+    // O número herói é sempre o que o usuário NÃO digitou — o derivado.
+    // Os slots trocam de lugar, mas calc() continua escrevendo nos mesmos
+    // data-attributes, então a lógica de cálculo não muda.
+    const heroLabel = inputMode === 'ppot' ? 'Valor total do combo' : 'Valor por pote';
+    const echoLabel = inputMode === 'ppot' ? 'Valor por pote' : 'Valor total com desconto';
+    const heroAttr = inputMode === 'ppot' ? 'data-total' : 'data-ppot';
+    const echoAttr = inputMode === 'ppot' ? 'data-ppot' : 'data-total';
+
     grid.innerHTML = qtys.map((q, i) => {
         const totalVal = saved[i];
         let inputStr = '';
@@ -306,13 +374,14 @@ function renderGrid(discountOverride) {
         }
 
         return `
-        <div class="card" data-idx="${i}" data-qty="${q}">
+        <div class="card is-empty" data-idx="${i}" data-qty="${q}" style="--i:${Math.min(i, 5)}">
             <div class="card-top" data-qty-bg="${q}">
                 <div class="card-top-left">
                     <div class="card-qty">${q} potes</div>
                     <div class="card-sub">${q * 30} Day Supply</div>
                 </div>
                 <div class="card-top-right">
+                    <span class="best-tag">★ Melhor valor</span>
                     <span class="disc-badge" data-disc-pct></span>
                 </div>
             </div>
@@ -331,17 +400,20 @@ function renderGrid(discountOverride) {
 
                 <hr class="sep">
 
+                <div class="hero">
+                    <span class="hero-lbl">${heroLabel}</span>
+                    <span class="hero-val" ${heroAttr}>—</span>
+                </div>
+
+                <div class="bar" aria-hidden="true"><span class="bar-fill"></span></div>
+
                 <div class="result-row">
                     <span class="r-lbl">Valor total riscado</span>
                     <span class="r-val strike" data-riscado>—</span>
                 </div>
                 <div class="result-row">
-                    <span class="r-lbl">Valor total com desconto</span>
-                    <span class="r-val disc" data-total>—</span>
-                </div>
-                <div class="result-row">
-                    <span class="r-lbl">Valor dos potes</span>
-                    <span class="r-val ppot" data-ppot>—</span>
+                    <span class="r-lbl">${echoLabel}</span>
+                    <span class="r-val disc" ${echoAttr}>—</span>
                 </div>
 
                 <div class="savings" data-sbox>
@@ -373,6 +445,10 @@ function calc(input, idx) {
         card.querySelector('[data-ppot]').textContent = '—';
         card.querySelector('[data-sbox]').style.display = 'none';
         if (badge) badge.style.display = 'none';
+        card.classList.add('is-empty');
+        card.style.setProperty('--pct', 0);
+        delete card.dataset.ppot;
+        updateBest();
         saveState();
         return;
     }
@@ -409,7 +485,31 @@ function calc(input, idx) {
         sbox.style.display = 'none';
     }
 
+    // Estado visual: barra comparativa e ranking de melhor valor.
+    card.classList.remove('is-empty');
+    card.style.setProperty('--pct', riscado > 0 ? Math.max(0, Math.min(100, (saves / riscado) * 100)) : 0);
+    card.dataset.ppot = ppot;
+    updateBest();
+
     saveState();
+}
+
+// O menor valor por pote é sempre o maior desconto — o preço cheio por pote
+// é o mesmo em todos os combos. Só marca se houver mais de um combo preenchido,
+// senão "melhor valor" não significa nada.
+function updateBest() {
+    const cards = Array.from(el('grid').querySelectorAll('[data-idx]'));
+    let best = null;
+    let filled = 0;
+
+    cards.forEach(c => {
+        const p = parseFloat(c.dataset.ppot);
+        if (isNaN(p)) return;
+        filled++;
+        if (best === null || p < parseFloat(best.dataset.ppot)) best = c;
+    });
+
+    cards.forEach(c => c.classList.toggle('is-best', filled > 1 && c === best));
 }
 
 function recalcAll() {
