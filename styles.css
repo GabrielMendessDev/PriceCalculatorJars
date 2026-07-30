@@ -77,7 +77,10 @@ body {
 }
 
 .header h1 {
-    font-size: 2.6rem;
+    /* Escala contínua entre ~500px e ~1020px de viewport, sem o salto
+       brusco que o breakpoint causava. */
+    font-size: clamp(1.9rem, 1.23rem + 2.15vw, 2.6rem);
+    text-wrap: balance;
     font-weight: 900;
     letter-spacing: -0.04em;
     line-height: 1.1;
@@ -94,6 +97,7 @@ body {
     max-width: 420px;
     margin: 0 auto;
     line-height: 1.65;
+    text-wrap: balance;
 }
 
 /* ── Config card ── */
@@ -352,7 +356,7 @@ input[type=number]:focus {
     border: 1px solid var(--border);
     border-radius: 18px;
     overflow: hidden;
-    transition: border-color 0.2s, box-shadow 0.25s, transform 0.25s;
+    transition: border-color 0.2s, box-shadow 0.25s, transform 0.25s, opacity 0.2s;
     box-shadow: 0 4px 28px rgba(0,0,0,0.35);
 }
 
@@ -821,9 +825,35 @@ input[type=number].error {
 
 @media (max-width: 500px) {
     body { padding: 2rem 1rem 4rem; }
-    .header h1 { font-size: 1.9rem; }
     .grid { grid-template-columns: 1fr; }
     .footer { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Foco por teclado ──
+   :focus-visible só dispara na navegação por teclado, então quem usa
+   mouse não vê diferença nenhuma. Os inputs já têm o próprio anel. */
+.btn:focus-visible,
+.btn-clear:focus-visible,
+.mode-btn:focus-visible,
+.chip-rm:focus-visible,
+.modal-close:focus-visible,
+.modal-rm-row:focus-visible,
+.modal-add-row:focus-visible,
+.modal-cancel:focus-visible,
+.modal-save:focus-visible,
+.footer-link:focus-visible {
+    outline: 2px solid var(--accent2);
+    outline-offset: 2px;
+}
+
+/* ── Combo em edição ganha o foco da atenção ──
+   CSS puro via :has() — nenhum listener, nenhum JS. */
+.grid:has(input:focus) .card:not(:has(input:focus)) {
+    opacity: 0.5;
+}
+
+.grid:has(input:focus) .card:has(input:focus) {
+    border-color: rgba(124,58,237,0.5);
 }
 
 /* ── Barra de rolagem da página ──
