@@ -10,6 +10,8 @@ Ferramenta web para calcular preços de combos de potes com desconto, valor por 
 - **Cálculo automático** — valor total riscado, desconto, preço por pote e economia calculados ao digitar
 - **Badge de % OFF** — exibe a porcentagem de desconto em cada combo
 - **Preço base editável** — altere o valor individual do pote e todos os combos recalculam instantaneamente
+- **Dois modos de entrada** — digite o valor total do combo ou o valor por pote; a conversão é automática
+- **Salva automaticamente** — combos, preço base e valores digitados persistem no navegador (localStorage)
 - **Design responsivo** — funciona em desktop e mobile
 
 ## 🖥️ Preview
@@ -29,9 +31,14 @@ Ferramenta web para calcular preços de combos de potes com desconto, valor por 
 ## 📁 Estrutura
 
 ```
-├── index.html   # Estrutura HTML
-├── styles.css   # Estilização (tema dark, responsivo)
-└── script.js    # Lógica de cálculo e modal
+├── index.html                     # Estrutura HTML
+├── styles.css                     # Estilização (tema dark, responsivo)
+├── script.js                      # Lógica de cálculo e modal
+├── fonts/
+│   └── inter-latin-var.woff2      # Inter variável (subset latino), self-hosted
+└── img/
+    ├── favicon-64.png             # Ícone da aba
+    └── favicon-180.png            # Ícone de tela inicial (iOS)
 ```
 
 ## 🛠️ Tecnologias
@@ -39,7 +46,7 @@ Ferramenta web para calcular preços de combos de potes com desconto, valor por 
 - HTML5
 - CSS3 (variáveis CSS, Grid, animações)
 - JavaScript puro (sem frameworks)
-- Google Fonts — Inter
+- Inter (fonte variável self-hosted, sem requisições a terceiros)
 
 ## 👤 Autor
 

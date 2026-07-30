@@ -102,8 +102,11 @@ function setMode(mode) {
 }
 
 function updateModeButtons() {
-    el('mode-total')?.classList.toggle('active', inputMode === 'total');
-    el('mode-ppot')?.classList.toggle('active', inputMode === 'ppot');
+    const isTotal = inputMode === 'total';
+    el('mode-total')?.classList.toggle('active', isTotal);
+    el('mode-ppot')?.classList.toggle('active', !isTotal);
+    el('mode-total')?.setAttribute('aria-pressed', String(isTotal));
+    el('mode-ppot')?.setAttribute('aria-pressed', String(!isTotal));
 }
 
 // ── Chips ──────────────────────────────────────────────
@@ -112,7 +115,8 @@ function renderChips() {
     el('chips').innerHTML = qtys.map((q, i) => `
         <div class="chip" data-chip-idx="${i}">
             <span>${q} potes</span>
-            <button class="chip-rm" onclick="removeQty(${i})" title="Remover">✕</button>
+            <button class="chip-rm" type="button" onclick="removeQty(${i})"
+                    title="Remover" aria-label="Remover combo de ${q} potes">✕</button>
         </div>
     `).join('');
 }
@@ -151,23 +155,25 @@ function openModal() {
     const overlay = document.createElement('div');
     overlay.id = 'modal-overlay';
     overlay.innerHTML = `
-        <div class="modal" id="modal-box">
+        <div class="modal" id="modal-box" role="dialog" aria-modal="true"
+             aria-labelledby="modal-title">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title">Configurar Combos</div>
+                    <div class="modal-title" id="modal-title">Configurar Combos</div>
                     <div class="modal-subtitle">Defina as quantidades de potes de cada kit</div>
                 </div>
-                <button class="modal-close" onclick="closeModal()">✕</button>
+                <button class="modal-close" type="button" onclick="closeModal()"
+                        aria-label="Fechar">✕</button>
             </div>
             <div class="modal-body">
                 <div id="modal-rows">
                     ${qtys.map((q, i) => buildModalRow(q, i + 1)).join('')}
                 </div>
-                <button class="modal-add-row" onclick="addModalRow()">+ Adicionar combo</button>
+                <button class="modal-add-row" type="button" onclick="addModalRow()">+ Adicionar combo</button>
             </div>
             <div class="modal-footer">
-                <button class="modal-cancel" onclick="closeModal()">Cancelar</button>
-                <button class="modal-save" onclick="saveModal()">Salvar combos</button>
+                <button class="modal-cancel" type="button" onclick="closeModal()">Cancelar</button>
+                <button class="modal-save" type="button" onclick="saveModal()">Salvar combos</button>
             </div>
         </div>
     `;
@@ -179,13 +185,15 @@ function openModal() {
 function buildModalRow(value, index) {
     return `
         <div class="modal-row">
-            <label>Kit ${index}</label>
+            <label for="kit-${index}">Kit ${index}</label>
             <div class="input-wrap" style="flex:1">
-                <input type="number" class="modal-qty-input" value="${value || ''}"
-                       min="1" step="1" placeholder="Qtd"
+                <input type="number" class="modal-qty-input" id="kit-${index}"
+                       value="${value || ''}" min="1" step="1" placeholder="Qtd"
+                       inputmode="numeric"
                        oninput="this.classList.remove('error')">
             </div>
-            <button class="modal-rm-row" onclick="removeModalRow(this)" title="Remover">✕</button>
+            <button class="modal-rm-row" type="button" onclick="removeModalRow(this)"
+                    title="Remover" aria-label="Remover kit ${index}">✕</button>
         </div>
     `;
 }
@@ -210,8 +218,13 @@ function removeModalRow(btn) {
 }
 
 function updateModalLabels() {
-    el('modal-rows').querySelectorAll('.modal-row label').forEach((lbl, i) => {
-        lbl.textContent = `Kit ${i + 1}`;
+    el('modal-rows').querySelectorAll('.modal-row').forEach((row, i) => {
+        const n = i + 1;
+        const id = `kit-${n}`;
+        row.querySelector('label').textContent = `Kit ${n}`;
+        row.querySelector('label').setAttribute('for', id);
+        row.querySelector('.modal-qty-input').id = id;
+        row.querySelector('.modal-rm-row')?.setAttribute('aria-label', `Remover kit ${n}`);
     });
 }
 
@@ -304,11 +317,13 @@ function renderGrid(discountOverride) {
                 </div>
             </div>
             <div class="card-body">
-                <div class="inp-label">${inpLabel}</div>
+                <label class="inp-label" for="disc-${i}">${inpLabel}</label>
                 <div class="card-inp-wrap">
                     <div class="input-wrap has-prefix">
-                        <span class="prefix">$</span>
-                        <input type="number" data-disc min="0" step="0.01" placeholder="0.00"
+                        <span class="prefix" aria-hidden="true">$</span>
+                        <input type="number" data-disc id="disc-${i}" min="0" step="0.01"
+                               placeholder="0.00" inputmode="decimal"
+                               aria-label="${inpLabel} — combo de ${q} potes"
                                value="${inputStr}"
                                oninput="calc(this, ${i})">
                     </div>

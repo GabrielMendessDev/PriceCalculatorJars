@@ -3,15 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#07090f" />
     <title>Calculadora de Potes</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-      rel="stylesheet"
+    <meta
+      name="description"
+      content="Calcule preços de combos de potes: valor total com desconto, preço por pote, porcentagem OFF e economia — em tempo real, direto no navegador."
     />
-    <link rel="icon" type="image/png" href="img/logo (2).png" />
+    <link
+      rel="preload"
+      href="fonts/inter-latin-var.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-64.png" />
+    <link rel="apple-touch-icon" href="img/favicon-180.png" />
+    <script src="script.js" defer></script>
   </head>
   <body>
     <div class="page">
@@ -26,16 +35,23 @@
 
       <div class="config-card">
         <div class="config-header">
-          <div class="section-title">Configurações</div>
-          <button class="btn-clear" id="btn-clear" onclick="clearAll(this)">
+          <h2 class="section-title">Configurações</h2>
+          <button
+            class="btn-clear"
+            id="btn-clear"
+            type="button"
+            onclick="clearAll(this)"
+          >
             Limpar
           </button>
         </div>
         <div class="config-layout">
           <div class="field">
-            <div class="field-label">Valor individual por pote</div>
+            <label class="field-label" for="base-price"
+              >Valor individual por pote</label
+            >
             <div class="input-wrap has-prefix">
-              <span class="prefix">$</span>
+              <span class="prefix" aria-hidden="true">$</span>
               <input
                 type="number"
                 id="base-price"
@@ -48,19 +64,19 @@
           </div>
 
           <div class="field">
-            <div class="field-label">Quantidades dos combos</div>
-            <div class="chips" id="chips"></div>
-            <button class="btn" onclick="openModal()">
-              ⚙ Configurar combos
+            <div class="field-label" id="lbl-qtys">Quantidades dos combos</div>
+            <div class="chips" id="chips" aria-labelledby="lbl-qtys"></div>
+            <button class="btn" type="button" onclick="openModal()">
+              <span aria-hidden="true">⚙</span> Configurar combos
             </button>
           </div>
         </div>
 
         <div class="config-mode">
-          <span class="field-label">Modo de entrada</span>
-          <div class="mode-toggle">
-            <button class="mode-btn active" id="mode-total" onclick="setMode('total')">Valor total do combo</button>
-            <button class="mode-btn" id="mode-ppot" onclick="setMode('ppot')">Valor por pote</button>
+          <span class="field-label" id="lbl-mode">Modo de entrada</span>
+          <div class="mode-toggle" role="group" aria-labelledby="lbl-mode">
+            <button class="mode-btn active" id="mode-total" type="button" aria-pressed="true" onclick="setMode('total')">Valor total do combo</button>
+            <button class="mode-btn" id="mode-ppot" type="button" aria-pressed="false" onclick="setMode('ppot')">Valor por pote</button>
           </div>
         </div>
       </div>
@@ -111,6 +127,5 @@
         </div>
       </footer>
     </div>
-    <script src="script.js"></script>
   </body>
 </html>
