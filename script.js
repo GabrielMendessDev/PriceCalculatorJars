@@ -1,5 +1,6 @@
 let qtys = [2, 3, 6];
 let inputMode = 'total'; // 'total' | 'ppot'
+let theme = null; // null = ainda segue o sistema; depois 'light' | 'dark'
 
 const el = id => document.getElementById(id);
 const STORAGE_KEY = 'potes_state';
@@ -24,6 +25,41 @@ function fmt(n) {
     if (n === null || n === undefined || isNaN(n)) return '—';
     const formatted = n % 1 === 0 ? n.toFixed(0) : n.toFixed(2);
     return '$ ' + formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ── Tema ───────────────────────────────────────────────
+// Enquanto o usuário não clica, `theme` fica null e quem manda é a media
+// query do CSS. O ícone mostra o tema em vigor: sol = claro, lua = escuro.
+
+const SUN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+
+const MOON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+
+// Tema que está valendo agora: a escolha do usuário, ou o que o sistema pede.
+function currentTheme() {
+    if (theme) return theme;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyTheme() {
+    const root = document.documentElement;
+    if (theme) root.setAttribute('data-theme', theme);
+    else root.removeAttribute('data-theme');
+
+    const btn = el('btn-theme');
+    if (!btn) return;
+
+    const now = currentTheme();
+    const other = now === 'light' ? 'escuro' : 'claro';
+    btn.innerHTML = now === 'light' ? SUN : MOON;
+    btn.setAttribute('title', `Mudar para o tema ${other}`);
+    btn.setAttribute('aria-label', `Tema ${now === 'light' ? 'claro' : 'escuro'}. Clique para mudar para o ${other}.`);
+}
+
+function toggleTheme() {
+    theme = currentTheme() === 'light' ? 'dark' : 'light';
+    applyTheme();
+    saveState();
 }
 
 // ── Persistência ───────────────────────────────────────
@@ -52,7 +88,8 @@ function saveState() {
             qtys,
             base: el('base-price')?.value || '179',
             discounts,
-            inputMode
+            inputMode,
+            theme
         }));
     }, 300);
 }
@@ -64,6 +101,7 @@ function loadState() {
         const state = JSON.parse(raw);
         if (Array.isArray(state.qtys) && state.qtys.length > 0) qtys = state.qtys;
         if (state.inputMode) inputMode = state.inputMode;
+        if (state.theme === 'light' || state.theme === 'dark') theme = state.theme;
         if (state.base) {
             const bp = el('base-price');
             if (bp) bp.value = state.base;
@@ -510,6 +548,13 @@ function recalcAll() {
 
 function init() {
     const discounts = loadState();
+    applyTheme();
+
+    // Sem escolha do usuário, o ícone precisa acompanhar o sistema se ele
+    // mudar com a página aberta.
+    window.matchMedia('(prefers-color-scheme: light)')
+        .addEventListener('change', () => { if (!theme) applyTheme(); });
+
     updateModeButtons();
     renderChips();
     renderGrid(discounts);
